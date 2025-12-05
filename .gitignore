@@ -1,2 +1,18 @@
-# Ignore environment variables
+# Python virtual environments
+**/venv/
+**/*_venv/
+
+# Python cache files
+*.pyc
+__pycache__/
+
+# Environment variable files (if you want to keep .env private)
 .env
+
+# IDE or editor folders
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
