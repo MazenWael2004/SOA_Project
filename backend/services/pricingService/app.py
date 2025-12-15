@@ -8,6 +8,7 @@ from flask_migrate import Migrate
 import requests
 
 
+load_dotenv('../../.env')
 
 app = Flask(__name__)
 app.config.from_object(Config)

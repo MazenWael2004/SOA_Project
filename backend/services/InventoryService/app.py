@@ -4,6 +4,7 @@ from config import Config
 from database import db
 from flask_migrate import Migrate
 
+load_dotenv('../../.env')
 
 app = Flask(__name__)
 app.config.from_object(Config)

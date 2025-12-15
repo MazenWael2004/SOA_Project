@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import os
 
 
-load_dotenv()
+load_dotenv('../../.env')
 
 # db = mysql.connector.connect(
 #     host=os.getenv('MYSQL_HOST'),
