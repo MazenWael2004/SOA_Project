@@ -1,10 +1,12 @@
 import mysql.connector
+from decimal import Decimal
 from flask import Flask,request, jsonify
 import _json
 from models import PricingRule,TaxRate
 from database import db
 from config import Config
 from flask_migrate import Migrate
+from dotenv import load_dotenv
 import requests
 
 
@@ -24,27 +26,27 @@ def calculate_price():
     total_amount=0
     for product in products_needed:
         product_id = product.get('product_id')
-        qty = product.get('quantity') 
+        qty = Decimal(str(product.get('quantity'))) 
         #check if product exists and get price
         response = requests.get(f"{INVENTORY_SERVICE_URL}/{product_id}")
         if response.status_code !=200:
             return jsonify({"error":"that product doesnt exist"})
         product_data= response.json()
-        unit_price = product_data['unit_price']
+        unit_price = Decimal(str(product_data['unit_price']))
     
         #check if there is a discount rule
         rule = PricingRule.query.filter(
                 PricingRule.product_id == product_id, 
                 PricingRule.min_quantity <= qty
             ).order_by(PricingRule.min_quantity.desc()).first()
-        discount=0.0
+        discount= Decimal ('0.0')
         if rule:
-            discount = rule.discount_precentage
+            discount = Decimal(rule.discount_percentage)
         
-        product_total = unit_price*qty -((unit_price*qty)*(discount/100))
+        product_total = unit_price*qty -((unit_price*qty)*(discount/Decimal('100')))
         total_amount+=product_total
 
-    return jsonify({"total_price":f"{total_amount}"})
+    return jsonify({"total_price":f"{total_amount}"}), 200
     
 @app.route('/api/pricing/seed', methods=['POST'])
 def seed_data():

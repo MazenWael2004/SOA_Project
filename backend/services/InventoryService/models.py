@@ -12,7 +12,7 @@ class Inventory(db.Model):
         return {
             "product_id": self.product_id,
             "product_name": self.product_name,
-            "quantity_availabe": self.quantity_available,
+            "quantity_available": self.quantity_available,
             "unit_price": float(self.unit_price),
             "last_updated": self.last_updated
         }

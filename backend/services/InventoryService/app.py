@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from flask import Flask, jsonify,request
 from models import Inventory
 from config import Config
@@ -37,7 +38,7 @@ def update_inventory():
     if not product:
         return jsonify({"error","this isn't a valid product"}),400
     if qty> product.quantity_available:
-        return jsonify({"error":"the quantity available is sufficent"}),400
+        return jsonify({"error":"the quantity available is insufficent"}),400
     
     product.quantity_available -= qty
     db.session.commit()

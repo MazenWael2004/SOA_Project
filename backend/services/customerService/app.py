@@ -29,14 +29,16 @@ def get_order_history(customer_id):
     if not cust:
         return jsonify({"error":"no customer found,maybe a wrong id"}),404
     try:
-        response= requests.get(f"{ORDER_HISTORY_URL}\{customer_id}")
-        if response.status_code ==200:
+        response= requests.get(f"{ORDER_HISTORY_URL}/{customer_id}")
+        if response.status_code == 200:
             return jsonify(response.json())
+        else:
+            return jsonify({"error":"order service returned an error"}), response.status_code
 
     except requests.exceptions.RequestException:
         return jsonify({"error":"failed to connect to order service"}),503
 
-@app.route("api/customers/<int:customer_id>/loyalty")
+@app.route("/api/customers/<int:customer_id>/loyalty")
 def update_loyalty(customer_id):
     data = request.get_json()
     points =data.get("loyalty_points")

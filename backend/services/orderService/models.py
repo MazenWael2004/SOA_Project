@@ -1,5 +1,5 @@
 # backend/services/OrderService/models.py
-from database import db
+from database import db #type:ignore
 from datetime import datetime
 
 class Order(db.Model):
@@ -32,9 +32,11 @@ class OrderItem(db.Model):
     order_id = db.Column(db.Integer, db.ForeignKey('orders.order_id'), nullable=False)
     product_id = db.Column(db.Integer, nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
+    unit_price = db.Column(db.Numeric(10,2), nullable=False)
 
     def to_dict(self):
         return {
             "product_id": self.product_id,
-            "quantity": self.quantity
+            "quantity": self.quantity,
+            "unit_price": self.unit_price
         }
