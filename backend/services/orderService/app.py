@@ -1,25 +1,27 @@
-import mysql.connector
+from config import Config
+from database import db
+from models import Order,OrderItem
 from flask import Flask,request, jsonify
 from dotenv import load_dotenv
+from flask_migrate import Migrate
 import os
 
 
-load_dotenv('../../.env')
-
-
 app = Flask(__name__)
+app.config.from_object(Config)
+db.init_app(app)
+Migrate(app,db)
 
-def getCon():
-    con= mysql.connector.connect(
-        host=os.getenv('MYSQL_HOST'),
-        user=os.getenv("MYSQL_USER"),
-        password=os.getenv("MYSQL_PASSWORD"),
-        database=os.getenv("MYSQL_DB")
-    )
-    return con
-    
+#Used by customer service  to get orders
+@app.route("api/orders/<int:customer_id>",methods=["GET"])
+def get_customer(customer_id):
+    orders = Order.query.filter_by(customer_id=customer_id).all()
+    if orders:
+        return jsonify ({[order.to_dict() for order in orders]}),200
+    return jsonify({"error":"no orders found for customer {customer_id}"}),404
 
-
+#update everything else here    
+# note to amr please use return jsonfiy(stuff),http code
 @app.route("/orders/<int:order_id>")
 def get_orders(order_id):
     # initilize con and cursor
@@ -56,7 +58,7 @@ def validate_order_input(data):
         raise ValueError("Empty or Invalid")
     if 'customer_id' not in data or 'products' not in data or 'total_amount' not in data:
         raise ValueError("Required Field Missing")
-    
+
 def validate_customer(cursor,customer_id):
     sql_Select_customer_id = "SELECT customer_id  FROM customers WHERE customer_id = %s "
     # get connection and cursor for transaction
