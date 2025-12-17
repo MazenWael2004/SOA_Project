@@ -31,7 +31,7 @@ def calculate_price():
         #check if product exists and get price
         response = requests.get(f"{INVENTORY_SERVICE_URL}/{product_id}")
         if response.status_code !=200:
-            return jsonify({"error":"that product doesnt exist"})
+            return jsonify({"error":"that product doesnt exist"}), 404
         product_data= response.json()
         unit_price = Decimal(str(product_data['unit_price']))
     
@@ -72,8 +72,8 @@ def seed_data():
         
         db.session.add_all([rule1, rule2])
         db.session.commit()
-        return jsonify({"message": "Pricing rules seeded!"})
-    return jsonify({"message": "Rules already exist"})
+        return jsonify({"message": "Pricing rules seeded!"}), 201
+    return jsonify({"message": "Rules already exist"}), 200
 
 
 

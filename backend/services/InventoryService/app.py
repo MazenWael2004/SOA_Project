@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify,request
 from models import Inventory
 from config import Config
-from database import db
+from database import db #type:ignore
 from flask_migrate import Migrate
 
 load_dotenv('../../.env')

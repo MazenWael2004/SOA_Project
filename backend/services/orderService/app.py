@@ -109,9 +109,9 @@ def create_order():
     if not data :
         return jsonify({"message": "the body was empty", "status": 400, "status_text": "Bad Request"}), 400
     # get values from the body
-    customer_id = data["customer_id"]
+    customer_id = data.get("customer_id")
     # total_amount = data['total_amount'] # Testing ALERT: Commented out for service testing
-    products = data['products']
+    products = data.get('products')
     # validate expected values existence
     if not customer_id :
         return jsonify({"error": "Body is missing customer_id", "status": 400, "status_text": "Bad Request"}), 400
@@ -139,21 +139,6 @@ def create_order():
         if not isinstance(product["product_id"], int) or not isinstance(product["quantity"], int):
             return jsonify({"error":"product_id and quantity must be integer"}), 400
 
-    # get total amount from the pricing service(reduntand but in assignment specification)
-    pricing_payload = { 
-            "products": [
-                {"product_id": product["product_id"] , "quantity": product["quantity"] }
-                for product in products]
-                }
-    try :
-        pricing_response = requests.post(PRICING_URL, json= pricing_payload)
-        if pricing_response.status_code != 200:
-            raise ValueError( "Failed to calculate pricing")
-        pricing_data = pricing_response.json()
-        total_amount = Decimal(pricing_data["total_price"])  
-    except ValueError as ve :
-        return jsonify({"error": str(ve), "status": 400}), 400
-
     # customer Existence validation
     if not customer_id :
         return jsonify({"error":"no customer found,maybe a wrong id"}),404
@@ -165,45 +150,66 @@ def create_order():
         return jsonify({"error": "failed to connect to customer service"}), 503
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 404
-    
-    # create the order
+    # inventory validated and data returned
+    unit_price = {}
     try:
-        order = Order(customer_id = customer_id, total_amount = total_amount)
-        # Product existence validation and item creation
+# Product existence validation and item creation
         for product in products:
             # validation
             response = requests.get(f"{INVENTORY_URL}/check/{product['product_id']}")
             if response.status_code != 200:
+                raise ValueError(f"Product {product['product_id']} not found")
                 return jsonify({"error": f"Product {product['product_id']} not found"}), 404
             inventory_data = response.json()
             if product['quantity'] > inventory_data['quantity_available'] :
-                return jsonify({"error": f"Insufficient stock for product {product['product_id']}"}), 400
-            
-            # item creation
-            unit_price = inventory_data["unit_price"]
-            item = OrderItem(product_id = product["product_id"], quantity = product["quantity"], unit_price = unit_price)
-            order.items.append(item)
-
-
-
-
-            
-        # add the order
-
-        db.session.add(order)
-        inventory_payload = {
+                raise ValueError(f"Insufficient stock for product {product['product_id']}")
+            unit_price[product['product_id']] = inventory_data['unit_price']
+    except ValueError as ve :
+        return jsonify({"error": str(ve)}), 400
+    # get total amount from the pricing service(reduntent but in assignment specification)
+    pricing_payload = { 
             "products": [
                 {"product_id": product["product_id"] , "quantity": product["quantity"] }
                 for product in products]
                 }
+    try :
+        pricing_response = requests.post(PRICING_URL, json= pricing_payload)
+        if pricing_response.status_code != 200:
+            raise ValueError( "Failed to calculate pricing")
+        pricing_data = pricing_response.json()
+        total_amount = Decimal(pricing_data["total_amount"])  
+    except ValueError as ve :
+        return jsonify({"error": str(ve), "status": 400}), 400
+
+    # create the order
+    try:
+        order = Order(customer_id = customer_id, total_amount = total_amount)    
+        # item creation
+        for product in products:
+            unit_price_of_product = unit_price[product['product_id']]
+            item = OrderItem(product_id = product["product_id"], quantity = product["quantity"], unit_price = unit_price_of_product)
+            order.items.append(item)
+
+        # add the order
+        db.session.add(order)
+
+        # send updates to inventory service
+        #  assignment specifies single service
+        # note: this may lead to a partial failure in which case the orders and order item table are fine
+        # but the inventory table will have some products updated and others not and be inconsistent
+        # would need to preform comepnsatory action in the except block but out of project scope
         
-        response = requests.put(
-                f"{INVENTORY_URL}/update",
-                json = inventory_payload,
-                )
-        if response.status_code != 200:
-            raise ValueError("Inventory update failed")
-        
+        for product in products:
+            inventory_payload = {
+                "product_id": product["product_id"] ,
+                "quantity": product["quantity"]
+                }
+            response = requests.put(
+                    f"{INVENTORY_URL}/update",
+                    json = inventory_payload,
+                    )
+            if response.status_code != 200:
+                raise ValueError(f"Inventory update failed on product with ID: {product['product_id']}")
         db.session.commit()
 
         order_id = order.order_id
