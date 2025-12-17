@@ -19,7 +19,7 @@ Migrate(app, db)
 def check_product_avail(product_id):
     product = Inventory.query.get_or_404(product_id)
     if product:
-        return jsonify(product.to_dict())
+        return jsonify(product.to_dict()), 200
     return jsonify({"error":"Product not found"}),404
 
 

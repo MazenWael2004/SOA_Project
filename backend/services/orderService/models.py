@@ -21,8 +21,8 @@ class Order(db.Model):
             "order_id": self.order_id,
             "customer_id": self.customer_id,
             "total_amount": float(self.total_amount),
-            "status": self.status,
-            "created_at": self.created_at,
+            # "status": self.status,
+            # "created_at": self.created_at,
             # Include the list of products in the response
             "products": [item.to_dict() for item in self.items]
         }
@@ -30,11 +30,10 @@ class Order(db.Model):
 class OrderItem(db.Model):
     __tablename__ = 'order_items'
 
-    item_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('orders.order_id'), nullable=False)
-    product_id = db.Column(db.Integer, nullable=False)
-    quantity = db.Column(db.Integer, nullable=False)
-    unit_price = db.Column(db.Numeric(10,2), nullable=False)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.order_id'), primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('inventory.product_id'), primary_key=True)
+    quantity = db.Column(db.Integer, default=1)
+    unit_price = db.Column(db.Numeric(10, 2))
 
     def to_dict(self):
         return {
