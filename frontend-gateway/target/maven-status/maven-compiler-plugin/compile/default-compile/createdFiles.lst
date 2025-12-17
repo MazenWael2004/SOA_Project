@@ -1,2 +1,3 @@
 soa\project\submitOrder.class
 soa\project\DemoServlet.class
+soa\project\InventoryServlet.class

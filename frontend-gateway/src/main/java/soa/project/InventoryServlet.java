@@ -49,7 +49,7 @@ public class InventoryServlet extends HttpServlet {
                 Map<String, Object> map = new HashMap<>();
                 map.put("id", item.getInt("product_id"));
                 map.put("name", item.getString("product_name"));
-                map.put("quantity", item.getInt("quantity_availabe")); // matches Flask API key
+                map.put("quantity", item.getInt("quantity_available")); // matches Flask API key
                 map.put("price", item.getDouble("unit_price"));
                 inventoryList.add(map);
             }
