@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 Migrate(app,db)
-ORDER_HISTORY_URL="http://localhost:5001/api/orders"
+ORDER_HISTORY_URL="http://localhost:5001/api/orders/by_customer"
 
 
 @app.route("/api/customers/<customer_id>",methods=["GET"])

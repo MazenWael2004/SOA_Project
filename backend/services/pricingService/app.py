@@ -24,6 +24,7 @@ def calculate_price():
     data= request.get_json()
     products_needed = data.get('products',[])
     total_amount=0
+    itemized_list = []
     for product in products_needed:
         product_id = product.get('product_id')
         qty = Decimal(str(product.get('quantity'))) 
@@ -43,10 +44,23 @@ def calculate_price():
         if rule:
             discount = Decimal(rule.discount_percentage)
         
-        product_total = unit_price*qty -((unit_price*qty)*(discount/Decimal('100')))
-        total_amount+=product_total
+        original_line_total = unit_price * qty
+        discount_amount = original_line_total * (discount / 100)
+        final_line_total = original_line_total - discount_amount
 
-    return jsonify({"total_price":f"{total_amount}"}), 200
+        itemized_list.append({
+            "product_id": product_id,
+            "product_name": product_data.get('product_name'),
+            "quantity": qty,
+            "unit_price": unit_price,
+            "discount_percent": discount,
+            "subtotal": final_line_total
+        })
+
+        total_amount += final_line_total
+    return jsonify({
+        "itemized_breakdown": itemized_list,
+        "total_amount": round(total_amount, 2)}),200
     
 @app.route('/api/pricing/seed', methods=['POST'])
 def seed_data():
