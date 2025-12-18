@@ -15,110 +15,133 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-
-
-
 @WebServlet("/submitOrder")
 public class submitOrder extends HttpServlet {
+
+    private static final String BASE_URL = "http://localhost:";
+    private static final String PRICING_SERVICE_PORT = "5003";
+    private static final String ORDER_SERVICE_PORT = "5001";
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String baseUrl ="http://localhost:";
-        String orderServicePort = "5001";
         String orderID = req.getParameter("order_id");
-        String endGetOrderURL= baseUrl+orderServicePort + "/orders/" + orderID;
+        if(orderID == null || orderID.isEmpty()){
+            resp.getWriter().println("Missing order_id parameter");
+            return;
+        }
+
+        String endGetOrderURL = BASE_URL + ORDER_SERVICE_PORT + "/orders/" + orderID;
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest orderRequest = HttpRequest.newBuilder()
-        .uri(URI.create(endGetOrderURL))
-        .header("Content-Type", "application/json")
-        .GET()
-        .build();
+                .uri(URI.create(endGetOrderURL))
+                .header("Content-Type", "application/json")
+                .GET()
+                .build();
 
         try {
             HttpResponse<String> orderResponse = client.send(orderRequest, HttpResponse.BodyHandlers.ofString());
             resp.setContentType("application/json");
             resp.getWriter().write(orderResponse.body());
-
         } catch (IOException | InterruptedException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
+            resp.getWriter().println("Failed to fetch order details: " + e.getMessage());
         }
-    
-        
     }
-    //submit the order to the orders service
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
-        //paths
-        String baseUrl ="http://localhost:";
-        String pricingServicePort = "5003";
-        String orderServicePort = "5001";
-        // get values from form
         String customerID = request.getParameter("customerID");
-        String productIDs[] = request.getParameterValues("productID[]");
-        String quantities[] = request.getParameterValues("quantity[]");
-        // check quantities length matches productids 
-        if(productIDs.length != quantities.length){
-            throw new ServletException("Mismatched number of Product IDs and number of quantities");
-        }
-        //for each product add to json object products
-        JSONArray products = new JSONArray();
-        for( int i = 0; i < productIDs.length; i ++){
-            JSONObject product = new JSONObject();
-            product.put("product_id", Integer.parseInt(productIDs[i]));
-            product.put("quantity",Integer.parseInt(quantities[i]));
-            products.put(product);
-        }
-        JSONObject productsQuantityPayload = new JSONObject();
-        productsQuantityPayload.put("products",products);
-        //send request to pricing service to get total amount
+        String[] productIDs = request.getParameterValues("productID[]");
+        String[] quantities = request.getParameterValues("quantity[]");
 
-        String endPricingServiceURL = baseUrl + pricingServicePort + "/api/pricing/calculate";
+        if(customerID == null || productIDs == null || quantities == null){
+            resp.getWriter().println("Missing required parameters.");
+            return;
+        }
+
+        if(productIDs.length != quantities.length){
+            resp.getWriter().println("Mismatched number of Product IDs and quantities.");
+            return;
+        }
+
+        // Build products JSON array
+        JSONArray products = new JSONArray();
+        try {
+            for(int i = 0; i < productIDs.length; i++){
+                JSONObject product = new JSONObject();
+                product.put("product_id", Integer.parseInt(productIDs[i]));
+                product.put("quantity", Integer.parseInt(quantities[i]));
+                products.put(product);
+            }
+        } catch(NumberFormatException e){
+            resp.getWriter().println("Invalid number format in product IDs or quantities.");
+            return;
+        }
+
+        // Call Pricing Service
+        JSONObject pricingPayload = new JSONObject();
+        pricingPayload.put("products", products);
+
         HttpClient client = HttpClient.newHttpClient();
+        String endPricingServiceURL = BASE_URL + PRICING_SERVICE_PORT + "/api/pricing/calculate";
         HttpRequest pricingRequest = HttpRequest.newBuilder()
-        .uri(URI.create(endPricingServiceURL))
-        .header("Content-Type", "application/json")
-        .POST(HttpRequest.BodyPublishers.ofString(productsQuantityPayload.toString()))
-        .build();
-        
+                .uri(URI.create(endPricingServiceURL))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(pricingPayload.toString()))
+                .build();
+
+        double totalAmount;
         try {
             HttpResponse<String> pricingResponse = client.send(pricingRequest, HttpResponse.BodyHandlers.ofString());
-            // get the response body
-            String responseBody = pricingResponse.body();
-            JSONObject pricingJson = new JSONObject(responseBody);
-            double totalAmount = pricingJson.getDouble("total_amount"); 
-            
-            // //temporary defualt value while Pricing Service is being made
-            // double totalAmount = 100;
+            JSONObject pricingJson = new JSONObject(pricingResponse.body());
 
-            // create request to Orders Service
+            if(!pricingJson.has("total_amount")){
+                resp.getWriter().println("Pricing service failed or returned invalid data: " + pricingResponse.body());
+                return;
+            }
+            totalAmount = pricingJson.getDouble("total_amount");
 
-            String endCreateOrderUrl = baseUrl + orderServicePort + "/api/orders/create" ;
-            JSONObject orderPayload = new JSONObject();
-            orderPayload.put("customer_id",Integer.parseInt(customerID));
+        } catch(Exception e){
+            e.printStackTrace();
+            resp.getWriter().println("Error calling pricing service: " + e.getMessage());
+            return;
+        }
+
+        // Call Order Service to create order
+        JSONObject orderPayload = new JSONObject();
+        try {
+            orderPayload.put("customer_id", Integer.parseInt(customerID));
             orderPayload.put("products", products);
             orderPayload.put("total_amount", totalAmount);
-            HttpRequest orderRequest = HttpRequest.newBuilder()
-            .uri(URI.create(endCreateOrderUrl))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(orderPayload.toString()))
-            .build();
-        HttpResponse<String> orderCreationResponse = client.send(orderRequest, HttpResponse.BodyHandlers.ofString());
-        String orderCreationResponseBody = orderCreationResponse.body();
-        JSONObject orderCreationResponseJson = new JSONObject(orderCreationResponseBody);
-        int status = orderCreationResponseJson.getInt("status");
-        int orderID = orderCreationResponseJson.getInt("order_id");
-        if(status == 201){
+        } catch(NumberFormatException e){
+            resp.getWriter().println("Invalid customer ID format.");
+            return;
+        }
+
+        String endCreateOrderUrl = BASE_URL + ORDER_SERVICE_PORT + "/api/orders/create";
+        HttpRequest orderRequest = HttpRequest.newBuilder()
+                .uri(URI.create(endCreateOrderUrl))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(orderPayload.toString()))
+                .build();
+
+        try {
+            HttpResponse<String> orderCreationResponse = client.send(orderRequest, HttpResponse.BodyHandlers.ofString());
+            JSONObject orderCreationJson = new JSONObject(orderCreationResponse.body());
+
+            int status = orderCreationJson.optInt("status", 0);
+            if(status != 201 || !orderCreationJson.has("order_id")){
+                resp.getWriter().println("Failed to create order: " + orderCreationResponse.body());
+                return;
+            }
+
+            int orderID = orderCreationJson.getInt("order_id");
             resp.sendRedirect("confirmation.jsp?order_id=" + orderID);
-        }
-        else{
-            resp.getWriter().println("Failed to Create Order");
-        }
-        } catch (Exception e) {
-             throw new ServletException("Request interrupted", e);
-        }
 
-
+        } catch(Exception e){
+            e.printStackTrace();
+            resp.getWriter().println("Error creating order: " + e.getMessage());
+        }
     }
-    
 }

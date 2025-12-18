@@ -1,4 +1,0 @@
-MYSQL_HOST=localhost
-MYSQL_DB=ecommerce_system
-MYSQL_USER=ecommerce_user
-MYSQL_PASSWORD=password

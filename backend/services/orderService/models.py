@@ -31,7 +31,7 @@ class OrderItem(db.Model):
     __tablename__ = 'order_items'
 
     order_id = db.Column(db.Integer, db.ForeignKey('orders.order_id'), primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('inventory.product_id'), primary_key=True)
+    product_id = db.Column(db.Integer, primary_key=True)  # removed FK
     quantity = db.Column(db.Integer, default=1)
     unit_price = db.Column(db.Numeric(10, 2))
 
@@ -39,5 +39,5 @@ class OrderItem(db.Model):
         return {
             "product_id": self.product_id,
             "quantity": self.quantity,
-            "unit_price": self.unit_price
+            "unit_price": float(self.unit_price)
         }
