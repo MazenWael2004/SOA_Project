@@ -28,6 +28,19 @@ def get_customer(customer_id):
         return jsonify ([order.to_dict() for order in orders]),200
     return jsonify({"error":"no orders found for customer {customer_id}"}),404
 
+@app.route("/debug/orders", methods=["GET"])
+def debug_orders():
+    orders = Order.query.all()
+    return jsonify([
+        {
+            "order_id": o.order_id,
+            "customer_id": o.customer_id,
+            "total_amount": float(o.total_amount)
+        }
+        for o in orders
+    ])
+
+
 #update everything else here    
 # note to amr please use return jsonfiy(stuff),http code
 @app.route("/api/orders/<int:order_id>",methods=["GET"])
