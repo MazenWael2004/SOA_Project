@@ -11,7 +11,8 @@
 </head>
 <body>
 <h2>Inventory List</h2>
-
+<a class="link" href="customerProfile">Profile</a>
+<a class="link" href="ordersHistory">Orders History</a>
 <%
     List<Map<String,Object>> inventoryList = (List<Map<String,Object>>) request.getAttribute("inventoryList");
     if (inventoryList != null && !inventoryList.isEmpty()) {

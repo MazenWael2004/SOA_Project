@@ -1,3 +1,5 @@
+soa\project\OrderHistoryServlet.class
+soa\project\CustomerProfileServlet.class
 soa\project\submitOrder.class
 soa\project\DemoServlet.class
 soa\project\InventoryServlet.class
