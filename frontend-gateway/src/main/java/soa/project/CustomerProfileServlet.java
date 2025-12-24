@@ -25,9 +25,21 @@ public class CustomerProfileServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String customerId = request.getParameter("customerId");
+        if (customerId == null || customerId.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing customerId parameter.");
+            return;
+        }
+        int customerIdInt;
+        try {
+            customerIdInt = Integer.parseInt(customerId);
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid customerId parameter.");
+            return;
+        }
         String baseUrl = "http://localhost:";
         String customerServicePort = "5004";
-        String customerApiUrl = baseUrl + customerServicePort + "/api/customers/1";
+        String customerApiUrl = baseUrl + customerServicePort + "/api/customers/" + customerIdInt;
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest customerRequest = HttpRequest.newBuilder()

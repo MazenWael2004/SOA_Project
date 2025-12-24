@@ -26,10 +26,21 @@ public class OrderHistoryServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
+        String customerId = request.getParameter("customerId");
+        if (customerId == null || customerId.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing customerId parameter.");
+            return;
+        }
+        int customerIdInt;
+        try {
+            customerIdInt = Integer.parseInt(customerId);
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid customerId parameter.");
+            return;
+        }
         String BASEURL = "http://localhost:";
         String ORDER_SERVICE_PORT = "5001";
-        String ORDER_API_URL = BASEURL + ORDER_SERVICE_PORT + "/api/orders/by_customer/2";
+        String ORDER_API_URL = BASEURL + ORDER_SERVICE_PORT + "/api/orders/by_customer/" + customerIdInt;
 
         String INVENTORY_SERVICE_PORT = "5002";
         String INVENTORY_API_URL = BASEURL + INVENTORY_SERVICE_PORT + "/api/inventory";
