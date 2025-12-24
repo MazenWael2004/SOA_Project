@@ -176,47 +176,6 @@ def create_order():
             "status": 400,
             "status_text": "Bad Request"
         }), 400
-    # # initilize con and cursor
-    # con = None
-    # cursor = None
-    # try:
-    #     data  = request.get_json() # To access the request body
-    #     validate_order_input(data)
-    #     # get values from data
-    #     customer_id = data.get('customer_id') # access the parameter 'customer_id'
-    #     products = data.get('products')
-    #     total_amount = data.get('total_amount')
-
-    #     con = getCon()
-    #     cursor = con.cursor(dictionary = True)
-    #     con.start_transaction()
-    #     # validate customer id
-    #     validate_customer(cursor= cursor,customer_id= customer_id)
-    #     # insert into the orders table this will generate the order_id and date
-    #     order_id = insert_order(cursor= cursor, customer_id=customer_id, total_amount=total_amount,return_order_id= True)
-    #     for product in products:
-    #         product_id = product['product_id']
-    #         quantity = product ['quantity']
-    #         # get the unit_price of the product and check that quantity is available
-    #         temp_product = get_product(cursor= cursor, product_id= product_id)
-    #         unit_price = temp_product["unit_price"]
-    #         quantity_available = temp_product["quantity_available"]
-    #         if quantity_available < quantity:
-    #             raise ValueError(f"Insufficient Stock for product {product_id}")
-    #         insert_order_item(cursor= cursor, order_id=order_id , product_id=product_id , unit_price=unit_price , quantity=quantity)
-    #     con.commit()  
-    #     return jsonify({"message": "Order created successfully","order_id":order_id, "status": 201 , "status_text" : "Created"}), 201 
-    # except ValueError as ve:
-    #     # json returned is invalid or empty
-    #     if con : con.rollback()
-    #     return jsonify( {"message": str(ve) , "status": 400 , "status_text":"Bad Request" } ), 400
-    # except KeyError as ke:
-    #     return jsonify( {"message": str(ke), "status": 400 , "status_text":"Bad Request"} ), 400
-    # except Exception as e:
-    #     return jsonify( {"message": str(e), "status": 500 , "status_text" : "Internal Server Error" } ), 500
-    # finally:
-    #     if cursor :cursor.close()
-    #     if con :con.close()
 
 
 if __name__ == "__main__":
